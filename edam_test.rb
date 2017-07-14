@@ -1,37 +1,10 @@
-#
-# A simple Evernote API demo script that lists all notebooks in the user's
-# account and creates a simple test note in the default notebook.
-#
-# Before running this sample, you must:
-# - fill in your Evernote developer token.
-# - install evernote-thrift gem.
-#
-# To run (Unix):
-#   ruby EDAMTest.rb
-#
-
 require "digest/md5"
 require 'evernote-thrift'
 require 'pry'
 
-# Real applications authenticate with Evernote using OAuth, but for the
-# purpose of exploring the API, you can get a developer token that allows
-# you to access your own Evernote account. To get a developer token, visit
-# https://sandbox.evernote.com/api/DeveloperToken.action
 authToken = File.read(File.expand_path "~/secrets/evernote-personal-auth-token")
 
-if authToken == "your developer token"
-  puts "Please fill in your developer token"
-  puts "To get a developer token, visit https://sandbox.evernote.com/api/DeveloperToken.action"
-  exit(1)
-end
 
-# Initial development is performed on our sandbox server. To use the production
-# service, change "sandbox.evernote.com" to "www.evernote.com" and replace your
-# developer token above with a token from
-# https://www.evernote.com/api/DeveloperToken.action
-evernoteHost = "www.evernote.com"
-userStoreUrl = "https://#{evernoteHost}/edam/user"
 
 userStoreTransport = Thrift::HTTPClientTransport.new(userStoreUrl)
 userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
