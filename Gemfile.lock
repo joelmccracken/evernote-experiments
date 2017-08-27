@@ -1,0 +1,30 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ansi (1.5.0)
+    ast (2.3.0)
+    coderay (1.1.1)
+    evernote-thrift (1.25.2)
+    method_source (0.8.2)
+    oga (2.10)
+      ast
+      ruby-ll (~> 2.1)
+    pry (0.10.4)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
+    ruby-ll (2.1.2)
+      ansi
+      ast
+    slop (3.6.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  evernote-thrift
+  oga
+  pry
+
+BUNDLED WITH
+   1.15.3
