@@ -1,13 +1,6 @@
 require 'bundler/inline'
 require 'bundler'
 
-gemfile(true, {ui: Bundler::UI::Silent.new }) do
-  source 'https://rubygems.org'
-
-  gem "evernote-thrift"
-  gem "pry"
-end
-
 require "digest/md5"
 require 'evernote-thrift'
 
@@ -64,6 +57,170 @@ class ENClient
     make_test_note
   end
 
+  def handle_inbox_links(doc, note)
+    doc.css('a').each do |link|
+      handle_inbox_link(link, doc, note)
+    end
+  end
+
+  def handle_inbox_link(link, doc, note)
+    while true
+      puts link.to_xml
+      puts "what do with link? (o)pen, view (f)ull note, re(m)ove, (r)efile, (q)uit"
+      response = gets.strip
+      # response = "r"
+      case response
+      when "m" then
+        link.remove
+        update_note_doc(note, doc)
+        return :handled
+      when "r" then
+        do_refile_flow(link, doc, note)
+      when "o" then
+        `open #{link[:href]}`
+      when "f" then
+        open_note_browser(doc)
+      when "q" then
+        exit 0
+      end
+    end
+  end
+
+  def do_refile_flow(link, src_doc, src_note)
+    display_refile_targets
+
+    loop do
+      puts "commands: enter number to refile, go (b)ack"
+      input = gets.strip
+      # input = "13"
+      if input == "b"
+        return :back
+      else
+        begin
+          num = Integer(input)
+          target = refile_targets[num]
+          if target.nil?
+            puts "no choice with that number"
+          else
+            puts "refiling into #{target.title}"
+            puts "additional note:"
+            additional_note = gets.strip
+            # additional_note = ""
+
+            # get target to refile to
+            note2 = get_full_note_by_guid(target.guid)
+            target_doc = Oga.parse_xml(note2.content)
+            body = target_doc.css('en-note').first
+
+            # make a new hr element
+            hr_element = Oga.parse_xml("<hr>").css("hr").first
+
+            # append hr element and link, first remove link
+            body.children << hr_element
+            link.remove
+
+            if additional_note.length > 0
+              additional_note_element = Oga.parse_xml("<div>#{additional_note}</div>").css("div").first
+              body.children << additional_note_element
+            end
+
+            body.children << link
+
+            # save changed note
+            update_note_doc(note2, target_doc)
+
+            update_note_doc(src_note, src_doc)
+            return :success
+          end
+        rescue ArgumentError
+          puts "not recognized command"
+        end
+      end
+
+      # case input
+      # when "n" then
+      #   results = process_refile
+      #   case results
+      #   when :success then return :success
+      #   when :error then return :error
+      #   end
+      # when "b" then
+      #   return :go_back
+      # end
+    end
+  end
+
+  def update_note(note)
+    note_store.updateNote(auth_token, note)
+  end
+
+  def update_note_doc(note, doc)
+    note.content = doc.to_xml
+    update_note(note)
+  end
+
+  def display_refile_targets
+    refile_targets.each do |number, note|
+      puts "#{number}. #{note.title}"
+    end
+  end
+
+
+  def refile_targets()
+    @refile_targets ||=
+      begin
+        refile_tag = tags.find{ |t| t.name == "refile-targets"}
+        filter = Evernote::EDAM::NoteStore::NoteFilter.new(tagGuids: [refile_tag.guid])
+        metadata_result_spec = Evernote::EDAM::NoteStore::NotesMetadataResultSpec.new(includeTitle: true)
+        targets = note_store.findNotesMetadata(auth_token, filter, 0, 500, metadata_result_spec)
+        targets.notes.each_with_index.map {|note, i|  [i, note]}.to_h
+      end
+  end
+
+  def open_note_browser(note_doc)
+    tf = Tempfile.new(["note", ".html"])
+    tf.puts note_doc.to_xml
+    tf.close
+    `open #{tf.path}`
+  end
+
+  def inbox
+    inbox_nb = notebooks.find { |x| x.name == "_Inbox"}
+
+    filter = Evernote::EDAM::NoteStore::NoteFilter.new(notebookGuid: inbox_nb.guid)
+    metadata_result_spec = Evernote::EDAM::NoteStore::NotesMetadataResultSpec.new(includeTitle: true)
+
+    results = note_store.findNotesMetadata(auth_token, filter, 0, 500, metadata_result_spec)
+
+    results.notes.each do |note|
+      puts "Note: #{note.title}"
+      puts "what do you want to do? (s)kip, (q)uit, (p)ry, (d)ig"
+      input = gets.strip
+      # input = "d"
+      case input
+      when "d" then
+        note2 = get_full_note_by_guid(note.guid)
+        doc = Oga.parse_xml(note2.content)
+        handle_inbox_links(doc, note2)
+      when "p" then
+        note2 = get_full_note_by_guid(note.guid)
+        doc = Oga.parse_xml(note2.content)
+        binding.pry
+      when "s" then
+        puts "skipping..."
+      when "q" then
+        puts "quitting.."
+        exit 0
+      else
+        puts "not recognized, nuttin happening"
+      end
+    end
+  end
+
+  def get_full_note_by_guid(guid)
+    note_store.getNote(auth_token, guid, true, true, true, true)
+  end
+
   def agenda
     display_notebook_and_notes("Actions")
     display_notebook_and_notes("Projects")
@@ -81,6 +238,10 @@ class ENClient
     results.notes.each do |note|
       puts "- #{note.title}"
     end
+  end
+
+  def tags
+    note_store.listTags(auth_token)
   end
 
   def notebooks
