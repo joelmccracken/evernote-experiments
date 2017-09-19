@@ -184,7 +184,7 @@ class ENClient
     `open #{tf.path}`
   end
 
-  def inbox
+  def inbox_notes
     inbox_nb = notebooks.find { |x| x.name == "_Inbox"}
 
     filter = Evernote::EDAM::NoteStore::NoteFilter.new(notebookGuid: inbox_nb.guid)
@@ -192,7 +192,11 @@ class ENClient
 
     results = note_store.findNotesMetadata(auth_token, filter, 0, 500, metadata_result_spec)
 
-    results.notes.each do |note|
+    results.notes
+  end
+
+  def inbox
+    inbox_notes.each do |note|
       puts "Note: #{note.title}"
       puts "what do you want to do? (s)kip, (q)uit, (p)ry, (d)ig"
       input = gets.strip
