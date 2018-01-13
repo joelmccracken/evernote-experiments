@@ -197,27 +197,26 @@ class ENClient
 
   def inbox
     inbox_notes.each do |note|
-      puts "Note: #{note.title}"
-      puts "what do you want to do? (s)kip, (q)uit, (p)ry, (d)ig"
-      input = gets.strip
-      # input = "d"
-      case input
-      when "d" then
-        note2 = get_full_note_by_guid(note.guid)
-        doc = Oga.parse_xml(note2.content)
-        handle_inbox_links(doc, note2)
-      when "p" then
-        note2 = get_full_note_by_guid(note.guid)
-        doc = Oga.parse_xml(note2.content)
-        binding.pry
-      when "s" then
-        puts "skipping..."
-      when "q" then
-        puts "quitting.."
-        exit 0
-      else
-        puts "not recognized, nuttin happening"
-      end
+      puts note.title
+      # input = gets.strip
+      # # input = "d"
+      # case input
+      # when "d" then
+      #   note2 = get_full_note_by_guid(note.guid)
+      #   doc = Oga.parse_xml(note2.content)
+      #   handle_inbox_links(doc, note2)
+      # when "p" then
+      #   note2 = get_full_note_by_guid(note.guid)
+      #   doc = Oga.parse_xml(note2.content)
+      #   binding.pry
+      # when "s" then
+      #   puts "skipping..."
+      # when "q" then
+      #   puts "quitting.."
+      #   exit 0
+      # else
+      #   puts "not recognized, nuttin happening"
+      # end
     end
   end
 
@@ -232,7 +231,6 @@ class ENClient
 
   def display_notebook_and_notes(notebook_name)
     actions_nb = notebooks.find { |x| x.name == notebook_name}
-
     puts notebook_name
 
     filter = Evernote::EDAM::NoteStore::NoteFilter.new(notebookGuid: actions_nb.guid)
